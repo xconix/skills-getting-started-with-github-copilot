@@ -107,6 +107,23 @@ def signup_for_activity(activity_name: str, email: str):
     
     # Add student
     activity["participants"].append(email)
+
     return {"message": f"Signed up {email} for {activity_name}"}
+
+
+# Endpoint pour désinscrire un participant
+from fastapi import Request
+@app.post("/activities/{activity_name}/unregister")
+def unregister_for_activity(activity_name: str, email: str):
+    if activity_name not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    activity = activities[activity_name]
+    normalized_email = email.strip().lower()
+    before = len(activity["participants"])
+    activity["participants"] = [p for p in activity["participants"] if p.strip().lower() != normalized_email]
+    after = len(activity["participants"])
+    if before == after:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    return {"message": f"{email} removed from {activity_name}"}
 
 

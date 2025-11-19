@@ -40,9 +40,46 @@ function renderActivity(container, activityName, data) {
       const txt = document.createElement("span");
       txt.textContent = email;
       li.appendChild(txt);
+      // Ajout de l'icône de suppression
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete-participant";
+      delBtn.title = "Supprimer ce participant";
+      delBtn.innerHTML = "&#128465;"; // Icône poubelle Unicode
+      delBtn.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        if (confirm(`Retirer ${email} de l'activité ?`)) {
+          await unregisterParticipant(activityName, email);
+        }
+      });
+      li.appendChild(delBtn);
       ul.appendChild(li);
     });
   }
+// Fonction pour désinscrire un participant
+async function unregisterParticipant(activityName, email) {
+  try {
+    const params = new URLSearchParams({ email });
+    const res = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister?` + params.toString(), {
+      method: "POST"
+    });
+    const activitiesList = document.getElementById("activities-list");
+    const activitySelect = document.getElementById("activity");
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({detail:'Erreur'}));
+      alert(err.detail || 'Suppression impossible');
+      return;
+    }
+    // Refresh activities to update participants in UI
+    const activities = await fetchActivities();
+    activitiesList.innerHTML = "";
+    Object.entries(activities).forEach(([name, data]) => {
+      renderActivity(activitiesList, name, data);
+    });
+    populateActivityOptions(activitySelect, activities);
+  } catch (err) {
+    alert('Erreur réseau');
+  }
+}
 
   container.appendChild(node);
 }
@@ -88,10 +125,17 @@ async function init() {
 
   signupForm.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    const activity = document.getElementById("activity").value;
+    const emailInput = document.getElementById("email");
+    const activityInput = document.getElementById("activity");
+    const email = emailInput.value.trim();
+    const activity = activityInput.value;
+    const submitBtn = signupForm.querySelector("button[type='submit']");
     if (!email || !activity) return;
 
+    // Désactiver le bouton pour éviter les doubles soumissions
+    if (submitBtn) submitBtn.disabled = true;
+    emailInput.disabled = true;
+    activityInput.disabled = true;
     try {
       const params = new URLSearchParams({ email });
       const res = await fetch(`/activities/${encodeURIComponent(activity)}/signup?` + params.toString(), {
@@ -105,7 +149,7 @@ async function init() {
       const result = await res.json();
       showMessage(messageEl, result.message, 'success');
 
-      // Refresh activities to update participants in UI
+      // Rafraîchir immédiatement la liste des activités et participants
       const activities = await fetchActivities();
       activitiesList.innerHTML = "";
       Object.entries(activities).forEach(([name, data]) => {
@@ -116,6 +160,10 @@ async function init() {
     } catch (err) {
       console.error(err);
       showMessage(messageEl, 'Network error', 'error');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+      emailInput.disabled = false;
+      activityInput.disabled = false;
     }
   });
 }
