@@ -21,6 +21,25 @@
         </div>
       </section>
 
+      <!-- Template for activity cards (used by app.js) -->
+      <template id="activity-template">
+        <article class="activity-card">
+          <h4 class="activity-title"></h4>
+          <p class="activity-desc"></p>
+          <p class="activity-schedule"></p>
+          <p class="activity-capacity"></p>
+
+          <!-- Participants section -->
+          <div class="participants">
+            <div class="participants-header">
+              <h5>Participants</h5>
+              <span class="participants-count"></span>
+            </div>
+            <ul class="participants-list" aria-live="polite"></ul>
+          </div>
+        </article>
+      </template>
+
       <section id="signup-container">
         <h3>Sign Up for an Activity</h3>
         <form id="signup-form">
